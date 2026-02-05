@@ -277,17 +277,16 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
         import { getDatabase, ref, set, get, onValue } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
 
-        // Firebase configuration - YOU NEED TO REPLACE THIS WITH YOUR CONFIG
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            databaseURL: "YOUR_DATABASE_URL",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
+       // Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyA17mbLAmg4VmFJbvctfQd2MZpuNrPeWy4",
+    authDomain: "habit-tracker-4ed02.firebaseapp.com",
+    databaseURL: "https://habit-tracker-4ed02-default-rtdb.firebaseio.com",
+    projectId: "habit-tracker-4ed02",
+    storageBucket: "habit-tracker-4ed02.firebasestorage.app",
+    messagingSenderId: "539719200764",
+    appId: "1:539719200764:web:792848e42472bc64938c79"
+};
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
