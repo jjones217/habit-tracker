@@ -389,16 +389,34 @@
         // ── Firebase realtime data ─────────────────────────────────────────
         function setupDbListener() {
             if (dbUnsubscribe) dbUnsubscribe();
-            const habitsRef  = ref(db, `users/${currentUserId}/habits`);
-            dbUnsubscribe    = onValue(habitsRef, (snapshot) => {
-                habits = snapshot.val() || [];
+            const habitsRef = ref(db, `users/${currentUserId}/habits`);
+            dbUnsubscribe   = onValue(habitsRef, (snapshot) => {
+                const val = snapshot.val();
+                // Firebase stores arrays as objects with numeric keys — convert back to array
+                if (!val) {
+                    habits = [];
+                } else if (Array.isArray(val)) {
+                    habits = val;
+                } else {
+                    habits = Object.values(val);
+                }
+                // Ensure each habit's completions is always a real array
+                habits = habits.map(h => ({
+                    ...h,
+                    completions: h.completions
+                        ? (Array.isArray(h.completions) ? h.completions : Object.values(h.completions))
+                        : []
+                }));
                 renderHabits();
             });
         }
 
         function saveHabits() {
             if (!currentUserId) return;
-            set(ref(db, `users/${currentUserId}/habits`), habits).catch(console.error);
+            // Store as a keyed object so Firebase round-trips cleanly
+            const habitsObj = {};
+            habits.forEach((h, i) => { habitsObj[i] = { ...h, completions: h.completions || [] }; });
+            set(ref(db, `users/${currentUserId}/habits`), habitsObj).catch(console.error);
         }
 
         // ── Habit CRUD ─────────────────────────────────────────────────────
@@ -407,13 +425,15 @@
             const name  = input.value.trim();
             if (!name) return;
             habits.push({ id: Date.now(), name, completions: [], createdAt: new Date().toISOString() });
-            saveHabits();
             input.value = '';
+            renderHabits();   // render immediately for snappy UI
+            saveHabits();     // then persist (listener will re-render again, that's fine)
         }
 
         function deleteHabit(id) {
             if (!confirm('Delete this habit?')) return;
             habits = habits.filter(h => h.id !== id);
+            renderHabits();
             saveHabits();
         }
 
@@ -425,6 +445,7 @@
             } else {
                 habit.completions.push(today);
             }
+            renderHabits();
             saveHabits();
         }
 
@@ -433,6 +454,7 @@
             const newIdx = idx + direction;
             if (newIdx < 0 || newIdx >= habits.length) return;
             [habits[idx], habits[newIdx]] = [habits[newIdx], habits[idx]];
+            renderHabits();
             saveHabits();
         }
 
