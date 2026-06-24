@@ -230,9 +230,23 @@
             aspect-ratio: 1; border-radius: 4px; background: #f0f0f0;
             display: flex; align-items: center; justify-content: center;
             font-size: 10px; color: #999;
+            cursor: pointer; transition: transform 0.1s;
         }
+        .calendar-day:hover     { transform: scale(1.12); }
         .calendar-day.completed { background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-weight: 600; }
         .calendar-day.today     { border: 2px solid #667eea; }
+
+        .log-past-row { display: flex; gap: 8px; margin-top: 10px; }
+        .log-past-input {
+            flex: 1; padding: 10px 12px; border: 2px solid #e0e0e0;
+            border-radius: 8px; font-size: 14px; outline: none; color: #333;
+        }
+        .log-past-input:focus { border-color: #667eea; }
+        .btn-small {
+            padding: 10px 16px; background: #667eea; color: white;
+            border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+        }
+        .btn-small:active { transform: scale(0.95); background: #5568d3; }
 
         .check-btn {
             width: 100%; padding: 14px; background: #10b981;
@@ -438,15 +452,28 @@
         }
 
         function toggleHabit(id) {
+            toggleHabitDate(id, getTodayString());
+        }
+
+        // Toggles completion for any date (today or in the past). Used by the
+        // "Mark Complete" button, calendar day clicks, and the past-date picker.
+        function toggleHabitDate(id, dateStr) {
+            if (dateStr > getTodayString()) return; // no logging future days
             const habit = habits.find(h => h.id === id);
-            const today = getTodayString();
-            if (habit.completions.includes(today)) {
-                habit.completions = habit.completions.filter(d => d !== today);
+            if (!habit) return;
+            if (habit.completions.includes(dateStr)) {
+                habit.completions = habit.completions.filter(d => d !== dateStr);
             } else {
-                habit.completions.push(today);
+                habit.completions.push(dateStr);
             }
             renderHabits();
             saveHabits();
+        }
+
+        function logPastDate(id) {
+            const input = document.getElementById(`pastDate-${id}`);
+            if (!input || !input.value) return;
+            toggleHabitDate(id, input.value);
         }
 
         function moveHabit(id, direction) {
@@ -458,10 +485,12 @@
             saveHabits();
         }
 
-        window.addHabit    = addHabit;
-        window.deleteHabit = deleteHabit;
-        window.toggleHabit = toggleHabit;
-        window.moveHabit   = moveHabit;
+        window.addHabit       = addHabit;
+        window.deleteHabit    = deleteHabit;
+        window.toggleHabit    = toggleHabit;
+        window.toggleHabitDate = toggleHabitDate;
+        window.logPastDate    = logPastDate;
+        window.moveHabit      = moveHabit;
 
         // ── Helpers ────────────────────────────────────────────────────────
         const ACHIEVEMENTS = [
@@ -542,7 +571,7 @@
 
                 const calHtml = getCalendarDays().map(date => {
                     const ds = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-                    return `<div class="calendar-day ${habit.completions.includes(ds) ? 'completed' : ''} ${ds === today ? 'today' : ''}">${date.getDate()}</div>`;
+                    return `<div class="calendar-day ${habit.completions.includes(ds) ? 'completed' : ''} ${ds === today ? 'today' : ''}" onclick="toggleHabitDate(${habit.id}, '${ds}')" title="${ds}">${date.getDate()}</div>`;
                 }).join('');
 
                 const achieveHtml = (unlocked.length > 0 || nextGoal) ? `
@@ -573,6 +602,10 @@
                         <button class="check-btn ${isCheckedToday?'checked':''}" onclick="toggleHabit(${habit.id})">
                             ${isCheckedToday ? '✓ Completed Today' : 'Mark Complete'}
                         </button>
+                        <div class="log-past-row">
+                            <input type="date" class="log-past-input" id="pastDate-${habit.id}" max="${today}" aria-label="Date to log">
+                            <button class="btn-small" onclick="logPastDate(${habit.id})">Log Day</button>
+                        </div>
                         ${achieveHtml}
                     </div>`;
             }).join('');
